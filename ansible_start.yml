@@ -1,0 +1,135 @@
+---
+- name: Установка и настройка LAMP стека с WordPress
+  hosts: vizor
+  become: yes
+  tasks:
+    - name: Обновление пакетов
+      apt:
+        update_cache: yes
+      when: ansible_os_family == "Debian"
+
+    - name: Установка пакетов
+      apt:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - apache2
+        - mysql-server
+        - php
+        - ghostscript
+        - libapache2-mod-php 
+        - php-bcmath
+        - php-curl 
+        - php-imagick 
+        - php-intl 
+        - php-json 
+        - php-mbstring 
+        - php-mysql 
+        - php-xml 
+        - php-zip
+        - nginx
+        - curl
+        - python3
+        - python3-pymysql
+      when: ansible_os_family == "Debian"
+
+    - name: Удаление анонимов
+      mysql_user:
+        name: ""
+        state: absent
+        login_unix_socket: /run/mysqld/mysqld.sock
+
+    - name: Удаление тестовой базы
+      mysql_db:
+        name: test
+        state: absent
+        login_unix_socket: /run/mysqld/mysqld.sock
+
+    - name: Перезагрузка привилегий
+      command: mysqladmin reload
+
+    - name: Запуск Apache
+      service:
+        name: apache2
+        state: started
+        enabled: yes
+
+    - name: Загрузить конфигурацию WordPress
+      get_url:
+        url: https://raw.githubusercontent.com/BrazovskyVladimir/vizor/main/wordpress.conf
+        dest: /etc/apache2/sites-available/wordpress.conf
+        force: yes
+
+    - name: Включить сайт WordPress
+      command: a2ensite wordpress
+
+    - name: Включить модуль rewrite
+      command: a2enmod rewrite
+
+    - name: Отключить сайт по умолчанию
+      command: a2dissite 000-default
+
+    - name: Скачивание и установка WordPress
+      get_url:
+        url: https://wordpress.org/latest.tar.gz
+        dest: /tmp/latest.tar.gz
+
+    - name: Распаковка WordPress
+      unarchive:
+        src: /tmp/latest.tar.gz
+        dest: /var/www/html/
+        copy: no
+
+    - name: Переименование директории WordPress
+      command: mv /var/www/html/wordpress /var/www/html/testforvizor
+
+    - name: Создание базы данных для WordPress
+      mysql_db:
+        name: wordpress
+        state: present
+        login_unix_socket: /run/mysqld/mysqld.sock
+
+    - name: Создание пользователя для WordPress
+      mysql_user:
+        name: wp_user
+        password: Floacd123!@
+        priv: "wordpress.*:ALL"
+        state: present
+        login_unix_socket: /run/mysqld/mysqld.sock
+
+    - name: Копирование файла wp-config.php
+      command: cp /var/www/html/testforvizor/wp-config-sample.php /var/www/html/testforvizor/wp-config.php
+
+    - name: Настройка файла wp-config.php
+      replace:
+        path: /var/www/html/testforvizor/wp-config.php
+        regexp: "{{ item.regexp }}"
+        replace: "{{ item.replace }}"
+      loop:
+        - { regexp: 'database_name_here', replace: 'wordpress' }
+        - { regexp: 'username_here', replace: 'wp_user' }
+        - { regexp: 'password_here', replace: 'Floacd123!@' }
+
+    - name: Перезапуск Apache
+      service:
+        name: apache2
+        state: restarted
+
+    - name: Забираем файл из GitHub
+      get_url:
+        url: https://raw.githubusercontent.com/BrazovskyVladimir/vizor/main/wordpress
+        dest: /etc/nginx/sites-available/wordpress
+
+    - name: Создание символической ссылки для Nginx
+      file:
+        src: /etc/nginx/sites-available/wordpress
+        dest: /etc/nginx/sites-enabled/wordpress
+        state: link
+      notify:
+        - Reload Nginx
+
+  handlers:
+    - name: Reload Nginx
+      service:
+        name: nginx
+        state: reloaded
