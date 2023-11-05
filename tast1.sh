@@ -15,6 +15,11 @@ configure_mysql() {
 configure_apache() {
     systemctl enable apache2
     systemctl start apache2
+    curl -O -L https://raw.githubusercontent.com/BrazovskyVladimir/vizor/main/wordpress.conf
+    cp ./wordpress.conf /etc/apache2/sites-available/wordpress.conf
+    a2ensite wordpress
+    a2enmod rewrite
+    a2dissite 000-default
 }
 
 # Функция для установки и настройки WordPress
