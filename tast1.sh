@@ -75,12 +75,10 @@ if [ -f "$wordpress_nginx_file" ]; then
     echo "Сервис nginx запущен."
 else
     configure_nginx
+    BOT_TOKEN="****"
+    CHAT_ID="****"
+    MESSAGE="Something installed and maybe is working"
+
+    # Отправка сообщения через Telegram Bot API
+    curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" -d "chat_id=$CHAT_ID" -d "text=$MESSAGE"
 fi
-
-
-BOT_TOKEN="****"
-CHAT_ID="****"
-MESSAGE="Something installed and maybe is working"
-
-# # Отправка сообщения через Telegram Bot API
-curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" -d "chat_id=$CHAT_ID" -d "text=$MESSAGE"
