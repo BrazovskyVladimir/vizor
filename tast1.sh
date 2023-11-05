@@ -3,7 +3,22 @@
 # Функция для установки пакетов
 install_packages() {
   apt-get update
-  apt-get -y install apache2 mysql-server php nginx curl
+  apt-get -y install apache2 \
+                 nginx \ 
+                 curl \
+                 ghostscript \
+                 libapache2-mod-php \
+                 mysql-server \
+                 php \
+                 php-bcmath \
+                 php-curl \
+                 php-imagick \
+                 php-intl \
+                 php-json \
+                 php-mbstring \
+                 php-mysql \
+                 php-xml \
+                 php-zip
 }
 
 # Функция для настройки MySQL
